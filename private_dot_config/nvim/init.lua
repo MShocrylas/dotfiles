@@ -25,14 +25,15 @@ o.softtabstop = -1
 o.tabstop = 2
 o.breakindent = true
 o.completeopt = 'menu,menuone,noselect,popup'
-vim.o.timeoutlen = 300
-vim.o.inccommand = 'split'
-vim.o.confirm = true
-vim.o.list = true
+o.timeoutlen = 300
+o.inccommand = 'split'
+o.confirm = true
+o.winborder = 'rounded'
+o.list = true
 vim.opt.listchars = { tab = '» ', trail = '·', nbsp = '␣' }
 -- Deferred: clipboard provider lookup is slow at startup
 vim.schedule(function()
-  vim.o.clipboard = 'unnamedplus'
+  o.clipboard = 'unnamedplus'
 end)
 
 
@@ -41,7 +42,7 @@ end)
 --------------------------------------------------------------------------------
 local map = vim.keymap.set
 map('n', '<Esc>', '<cmd>nohlsearch<CR>')
-map('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
+map('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic location list' })
 map('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' })
 map('n', '<C-h>', '<C-w><C-h>', { desc = 'Move focus to the left window' })
 map('n', '<C-l>', '<C-w><C-l>', { desc = 'Move focus to the right window' })
@@ -54,7 +55,7 @@ map('n', '0', function()
     vim.cmd 'normal! 0'
   end
 end, { silent = true, desc = 'Go to first non-blank character of the line, if already there, go to column 0' })
-map('n', '<leader>gp', '<cmd>let @+ = expand("%:p")<CR>', { desc = 'Copy current file path to file clipboard' })
+map('n', '<leader>gp', '<cmd>let @+ = expand("%:p")<CR>', { desc = 'Copy current file path to clipboard' })
 
 --------------------------------------------------------------------------------
 -- Autocommands
@@ -95,7 +96,7 @@ vim.pack.add({
 
 
 --------------------------------------------------------------------------------
--- Coloscheme
+-- Colorscheme
 --------------------------------------------------------------------------------
 vim.cmd.colorscheme("kanagawa")
 
@@ -119,8 +120,11 @@ map("n", "\\", function()
 end, { desc = "File explorer" })
 
 require("mini.ai").setup()       -- TODO: read up on the functionality of this more, then delete this comment
+-- For mini.surround
+map({ 'n', 'x' }, 's', '<Nop>')
 require("mini.surround").setup() -- TODO: read up on the functionality of this more, then delete this comment
 require("mini.git").setup()      -- TODO: read up on the functionality of this more, then delete this comment
+require("mini.statusline").setup()
 
 -- mini.clue: shows available keys after a prefix (which-key equivalent)
 local miniclue = require("mini.clue")
@@ -128,6 +132,7 @@ miniclue.setup({
   triggers = {
     { mode = "n", keys = "<Leader>" },
     { mode = "x", keys = "<Leader>" },
+    { mode = "n", keys = "s" },
     { mode = "n", keys = "g" },
     { mode = "x", keys = "g" },
     { mode = "n", keys = "z" },
@@ -153,6 +158,7 @@ miniclue.setup({
     { mode = "n", keys = "<Leader>s", desc = "+Search" },
     { mode = "n", keys = "<Leader>h", desc = "+Git hunks" },
     { mode = "n", keys = "<Leader>c", desc = "+Code" },
+    { mode = "n", keys = "<Leader>g", desc = "+Misc" },
   },
   window = {
     delay = 300,
@@ -187,7 +193,9 @@ map("n", "]h", function() gs.nav_hunk("next") end, { desc = "Next hunk" })
 map("n", "[h", function() gs.nav_hunk("prev") end, { desc = "Prev hunk" })
 map("n", "<leader>hp", gs.preview_hunk, { desc = "Preview hunk" })
 map("n", "<leader>hs", gs.stage_hunk, { desc = "Stage hunk" })
+map("v", "<leader>hs", function() gs.stage_hunk({ vim.fn.line("."), vim.fn.line("v") }) end, { desc = "Stage hunk" })
 map("n", "<leader>hr", gs.reset_hunk, { desc = "Reset hunk" })
+map("v", "<leader>hr", function() gs.reset_hunk({ vim.fn.line("."), vim.fn.line("v") }) end, { desc = "Reset hunk" })
 map("n", "<leader>hb", function() gs.blame_line({ full = true }) end, { desc = "Blame line" })
 
 --------------------------------------------------------------------------------
@@ -226,7 +234,7 @@ vim.api.nvim_create_autocmd("LspAttach", {
       map("n", lhs, rhs, { buffer = ev.buf, desc = desc })
     end
     -- Built-in defaults: K hover, grn rename, gra code action, grr references,
-    -- gri implementation, g0 symbols, <C-S> signature help (insert).
+    -- gri implementation, gO symbols, <C-S> signature help (insert).
     lmap("gd", vim.lsp.buf.definition, "Go to definition")
     lmap("<leader>cf", function() vim.lsp.buf.format({ async = true }) end, "Format")
 
@@ -248,6 +256,7 @@ vim.api.nvim_create_autocmd("LspAttach", {
 
     if client and client:supports_method("textDocument/completion") then
       vim.lsp.completion.enable(true, client.id, ev.buf, { autotrigger = true })
+      map('i', '<C-Space>', function() vim.lsp.completion.get() end, { buffer = ev.buf })
     end
   end,
 })
