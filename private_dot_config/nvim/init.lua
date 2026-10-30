@@ -1,5 +1,5 @@
-vim.g.mapleader = ' '
-vim.g.maplocalleader = ' '
+vim.g.mapleader = " "
+vim.g.maplocalleader = " "
 
 --------------------------------------------------------------------------------
 -- Options
@@ -7,12 +7,12 @@ vim.g.maplocalleader = ' '
 local o = vim.o
 o.number = true
 o.relativenumber = true
-o.mouse = 'a'
+o.mouse = "a"
 o.showmode = false
 o.undofile = true
 o.ignorecase = true
 o.smartcase = true
-o.signcolumn = 'yes'
+o.signcolumn = "yes"
 o.updatetime = 250
 o.splitright = true
 o.splitbelow = true
@@ -24,16 +24,16 @@ o.shiftwidth = 2
 o.softtabstop = -1
 o.tabstop = 2
 o.breakindent = true
-o.completeopt = 'menu,menuone,noselect,popup'
+o.completeopt = "menu,menuone,noselect,popup"
 o.timeoutlen = 300
-o.inccommand = 'split'
+o.inccommand = "split"
 o.confirm = true
-o.winborder = 'rounded'
+o.winborder = "rounded"
 o.list = true
-vim.opt.listchars = { tab = '» ', trail = '·', nbsp = '␣' }
+vim.opt.listchars = { tab = "» ", trail = "·", nbsp = "␣" }
 -- Deferred: clipboard provider lookup is slow at startup
 vim.schedule(function()
-  o.clipboard = 'unnamedplus'
+  o.clipboard = "unnamedplus"
 end)
 
 
@@ -41,27 +41,29 @@ end)
 -- Keymaps
 --------------------------------------------------------------------------------
 local map = vim.keymap.set
-map('n', '<Esc>', '<cmd>nohlsearch<CR>')
-map('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic location list' })
-map('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' })
-map('n', '<C-h>', '<C-w><C-h>', { desc = 'Move focus to the left window' })
-map('n', '<C-l>', '<C-w><C-l>', { desc = 'Move focus to the right window' })
-map('n', '<C-j>', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
-map('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
-map('n', '0', function()
-  local col = vim.fn.col '.'
-  vim.cmd 'normal! ^'
-  if col == vim.fn.col '.' then
-    vim.cmd 'normal! 0'
+map("n", "<Esc>", "<cmd>nohlsearch<CR>")
+map("n", "<leader>q", vim.diagnostic.setloclist, { desc = "Open diagnostic location list" })
+map("t", "<Esc><Esc>", "<C-\\><C-n>", { desc = "Exit terminal mode" })
+map("n", "<C-h>", "<C-w><C-h>", { desc = "Move focus to the left window" })
+map("n", "<C-l>", "<C-w><C-l>", { desc = "Move focus to the right window" })
+map("n", "<C-j>", "<C-w><C-j>", { desc = "Move focus to the lower window" })
+map("n", "<C-k>", "<C-w><C-k>", { desc = "Move focus to the upper window" })
+map("n", "0", function()
+  local col = vim.fn.col(".")
+  vim.cmd("normal! ^")
+  if col == vim.fn.col(".") then
+    vim.cmd("normal! 0")
   end
-end, { silent = true, desc = 'Go to first non-blank character of the line, if already there, go to column 0' })
-map('n', '<leader>gp', '<cmd>let @+ = expand("%:p")<CR>', { desc = 'Copy current file path to clipboard' })
+end, { silent = true, desc = "Go to first non-blank character of the line, if already there, go to column 0" })
+map("n", "<leader>gp", "<cmd>let @+ = expand('%:p')<CR>", { desc = "Copy current file path to clipboard" })
 
 --------------------------------------------------------------------------------
 -- Autocommands
 --------------------------------------------------------------------------------
-vim.api.nvim_create_autocmd('TextYankPost', {
-  group = vim.api.nvim_create_augroup('kickstart-highlight-yank', { clear = true }),
+local aug = vim.api.nvim_create_augroup("user", { clear = true })
+
+vim.api.nvim_create_autocmd("TextYankPost", {
+  group = aug,
   callback = function()
     vim.hl.on_yank()
   end,
@@ -73,6 +75,7 @@ vim.api.nvim_create_autocmd('TextYankPost', {
 -- Run :TSUpdate after treesitter is installed or updated.
 -- Must be defined BEFORE vim.pack.add()
 vim.api.nvim_create_autocmd("PackChanged", {
+  group = aug,
   callback = function(ev)
     local d = ev.data
     if d.spec.name == "nvim-treesitter" and (d.kind == "install" or d.kind == "update") then
@@ -118,13 +121,15 @@ minifiles.setup({
 map("n", "\\", function()
   -- Toggle: inside the explorer the buffer name isn't a real path, so close instead
   if not minifiles.close() then
-    minifiles.open(vim.api.nvim_buf_get_name(0), false)
+    -- Non-file buffers (term://, help, unnamed) have no valid path; fall back to cwd
+    local path = vim.api.nvim_buf_get_name(0)
+    minifiles.open(vim.uv.fs_stat(path) and path or nil, false)
   end
 end, { desc = "File explorer" })
 
 require("mini.ai").setup()       -- TODO: read up on the functionality of this more, then delete this comment
 -- For mini.surround
-map({ 'n', 'x' }, 's', '<Nop>')
+map({ "n", "x" }, "s", "<Nop>")
 require("mini.surround").setup() -- TODO: read up on the functionality of this more, then delete this comment
 require("mini.git").setup()      -- TODO: read up on the functionality of this more, then delete this comment
 require("mini.statusline").setup()
@@ -136,6 +141,7 @@ miniclue.setup({
     { mode = "n", keys = "<Leader>" },
     { mode = "x", keys = "<Leader>" },
     { mode = "n", keys = "s" },
+    { mode = "x", keys = "s" },
     { mode = "n", keys = "g" },
     { mode = "x", keys = "g" },
     { mode = "n", keys = "z" },
@@ -145,8 +151,8 @@ miniclue.setup({
     { mode = "n", keys = "<C-w>" },
     { mode = "n", keys = "'" },
     { mode = "n", keys = "`" },
-    { mode = "n", keys = '"' },
-    { mode = "x", keys = '"' },
+    { mode = "n", keys = "\"" },
+    { mode = "x", keys = "\"" },
     { mode = "i", keys = "<C-r>" },
     { mode = "c", keys = "<C-r>" },
     { mode = "i", keys = "<C-x>" },
@@ -208,12 +214,14 @@ require("nvim-treesitter").install({
   "c", "cpp", "cmake", "python", "lua", "vim", "vimdoc", "bash", "json", "yaml", "toml", "markdown",
 })
 vim.api.nvim_create_autocmd("FileType", {
+  group = aug,
   callback = function(ev) pcall(vim.treesitter.start, ev.buf) end,
 })
 
 --------------------------------------------------------------------------------
 -- LSP (native). Mason only installs binaries; it configures nothing.
--- Add a language:  :MasonInstall <server>, then add its name here
+-- Add a language:  :MasonInstall <mason-package>, then add its lspconfig name below
+-- (names can differ, e.g. package "lua-language-server" -> server "lua_ls")
 --------------------------------------------------------------------------------
 require("mason").setup() -- must run before vim.lsp.enable
 
@@ -231,6 +239,7 @@ vim.lsp.config("lua_ls", {
 vim.lsp.enable({ "clangd", "basedpyright", "lua_ls" })
 
 vim.api.nvim_create_autocmd("LspAttach", {
+  group = aug,
   callback = function(ev)
     local client = vim.lsp.get_client_by_id(ev.data.client_id)
     local function lmap(lhs, rhs, desc)
@@ -259,7 +268,7 @@ vim.api.nvim_create_autocmd("LspAttach", {
 
     if client and client:supports_method("textDocument/completion") then
       vim.lsp.completion.enable(true, client.id, ev.buf, { autotrigger = true })
-      map('i', '<C-Space>', function() vim.lsp.completion.get() end, { buffer = ev.buf })
+      map("i", "<C-Space>", function() vim.lsp.completion.get() end, { buffer = ev.buf })
     end
   end,
 })
