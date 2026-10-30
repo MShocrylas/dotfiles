@@ -116,7 +116,10 @@ minifiles.setup({
   },
 })
 map("n", "\\", function()
-  minifiles.open(vim.api.nvim_buf_get_name(0), false)
+  -- Toggle: inside the explorer the buffer name isn't a real path, so close instead
+  if not minifiles.close() then
+    minifiles.open(vim.api.nvim_buf_get_name(0), false)
+  end
 end, { desc = "File explorer" })
 
 require("mini.ai").setup()       -- TODO: read up on the functionality of this more, then delete this comment
