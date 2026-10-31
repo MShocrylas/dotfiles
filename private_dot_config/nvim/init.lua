@@ -127,7 +127,7 @@ map("n", "\\", function()
   end
 end, { desc = "File explorer" })
 
-require("mini.ai").setup()       -- TODO: read up on the functionality of this more, then delete this comment
+require("mini.ai").setup() -- TODO: read up on the functionality of this more, then delete this comment
 -- For mini.surround
 map({ "n", "x" }, "s", "<Nop>")
 require("mini.surround").setup() -- TODO: read up on the functionality of this more, then delete this comment
@@ -184,9 +184,9 @@ fzf.register_ui_select()
 map("n", "<leader>sf", fzf.files, { desc = "Find files" })
 map("n", "<leader>sg", fzf.live_grep, { desc = "Live grep" })
 map("n", "<leader><leader>", fzf.buffers, { desc = "Buffers" })
+map("n", "<leader>sr", fzf.resume, { desc = "Resume last picker" })
 -- TODO: Review if these are useful, and if there are other available pickers that would be useful
 map("n", "<leader>sh", fzf.helptags, { desc = "Help" })
-map("n", "<leader>sr", fzf.resume, { desc = "Resume last picker" })
 map("n", "<leader>sd", fzf.diagnostics_document, { desc = "Diagnostics" })
 
 --------------------------------------------------------------------------------
