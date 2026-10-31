@@ -52,6 +52,8 @@ source $ZSH/oh-my-zsh.sh
 ## User configuration
 [ -f ~/.common.sh ] && . ~/.common.sh
 
+export MANPAGER="col -b | nvim -c 'set ft=man ts=8 nomod nolist nonu noma' -"
+
 # History settings
 setopt hist_ignore_all_dups inc_append_history no_share_history
 
