@@ -236,7 +236,7 @@ vim.lsp.config("lua_ls", {
     },
   },
 })
-vim.lsp.enable({ "clangd", "basedpyright", "lua_ls" })
+vim.lsp.enable({ "clangd", "basedpyright", "lua_ls", "sqruff" })
 
 vim.api.nvim_create_autocmd("LspAttach", {
   group = aug,
