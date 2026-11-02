@@ -211,7 +211,7 @@ map("n", "<leader>hb", function() gs.blame_line({ full = true }) end, { desc = "
 -- Treesitter (main branch: needs the tree-sitter CLI and a C compiler)
 --------------------------------------------------------------------------------
 require("nvim-treesitter").install({
-  "c", "cpp", "cmake", "python", "lua", "vim", "vimdoc", "bash", "json", "yaml", "toml", "markdown",
+  "c", "cpp", "cmake", "python", "lua", "vim", "vimdoc", "bash", "json", "yaml", "toml", "markdown", "go"
 })
 vim.api.nvim_create_autocmd("FileType", {
   group = aug,
@@ -236,7 +236,7 @@ vim.lsp.config("lua_ls", {
     },
   },
 })
-vim.lsp.enable({ "clangd", "basedpyright", "lua_ls", "sqruff" })
+vim.lsp.enable({ "clangd", "basedpyright", "lua_ls", "sqruff", "gopls" })
 
 vim.api.nvim_create_autocmd("LspAttach", {
   group = aug,
