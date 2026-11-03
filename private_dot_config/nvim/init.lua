@@ -31,6 +31,19 @@ o.confirm = true
 o.winborder = "rounded"
 o.list = true
 vim.opt.listchars = { tab = "» ", trail = "·", nbsp = "␣" }
+-- Over SSH there is no usable X display (xclip fails), so copy via OSC 52 instead.
+-- Paste reads the unnamed register, since terminals/tmux often don't answer OSC 52 paste queries.
+if vim.env.SSH_TTY or vim.env.SSH_CONNECTION then
+  local osc52 = require("vim.ui.clipboard.osc52")
+  local function paste_from_register()
+    return vim.split(vim.fn.getreg('"'), "\n")
+  end
+  vim.g.clipboard = {
+    name = "OSC 52",
+    copy = { ["+"] = osc52.copy("+"), ["*"] = osc52.copy("*") },
+    paste = { ["+"] = paste_from_register, ["*"] = paste_from_register },
+  }
+end
 -- Deferred: clipboard provider lookup is slow at startup
 vim.schedule(function()
   o.clipboard = "unnamedplus"
@@ -178,7 +191,13 @@ miniclue.setup({
 -- fzf-lua
 --------------------------------------------------------------------------------
 local fzf = require("fzf-lua")
-fzf.setup({})
+fzf.setup({
+  winopts = {
+    preview = {
+      layout = "flex"
+    }
+  }
+})
 fzf.register_ui_select()
 
 map("n", "<leader>sf", fzf.files, { desc = "Find files" })
