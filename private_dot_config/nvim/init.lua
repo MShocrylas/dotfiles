@@ -25,7 +25,7 @@ o.softtabstop = -1
 o.tabstop = 2
 o.breakindent = true
 o.completeopt = "menu,menuone,noselect,popup"
-o.timeoutlen = 300
+o.timeoutlen = 500
 o.inccommand = "split"
 o.confirm = true
 o.winborder = "rounded"
@@ -70,6 +70,40 @@ map("n", "0", function()
 end, { silent = true, desc = "Go to first non-blank character of the line, if already there, go to column 0" })
 map("n", "<leader>gp", "<cmd>let @+ = expand('%:p')<CR>", { desc = "Copy current file path to clipboard" })
 
+-- Auto closing: <Tab> after an opener inserts its closer, <CR> after "{" opens a block.
+-- Mapped on <Tab>/<CR> (no prefix) so timeoutlen doesn't cut them off.
+local closers = { ['"'] = '"', ["'"] = "'", ["("] = ")", ["["] = "]", ["{"] = "}" }
+map("i", "<Tab>", function()
+  if vim.fn.pumvisible() == 1 then return "<Tab>" end
+  -- Overriding <Tab> replaces Neovim's default snippet-jump mapping, so redo it here
+  if vim.snippet.active({ direction = 1 }) then
+    vim.schedule(function() vim.snippet.jump(1) end)
+    return ""
+  end
+  local col = vim.api.nvim_win_get_cursor(0)[2]
+  local prev = vim.api.nvim_get_current_line():sub(col, col)
+  local close = closers[prev]
+  return close and (close .. "<Left>") or "<Tab>"
+end, { expr = true, desc = "Close bracket/quote after opener, else snippet jump / Tab" })
+
+map("i", "<CR>", function()
+  local col = vim.api.nvim_win_get_cursor(0)[2]
+  local before = vim.api.nvim_get_current_line():sub(1, col)
+  if before:sub(-2) == "{;" then return "<BS><CR>};<Esc>O" end
+  if before:sub(-1) == "{" then return "<CR>}<Esc>O" end
+  return "<CR>"
+end, { expr = true, desc = "Close curly brace on a new line" })
+
+-- Previous version: prefix mappings, which only work within timeoutlen. Swap back by
+-- deleting the block above and uncommenting these.
+-- map("i", '"<tab>', '""<Left>', { desc = "Close double quote" })
+-- map("i", "'<tab>", "''<Left>", { desc = "Close single quote" })
+-- map("i", "(<tab>", "()<Left>", { desc = "Close parenthesis" })
+-- map("i", "[<tab>", "[]<Left>", { desc = "Close square bracket" })
+-- map("i", "{<tab>", "{}<Left>", { desc = "Close curly brace" })
+-- map("i", "{<CR>", "{<CR>}<ESC>O", { desc = "Close curly brace on a new line" })
+-- map("i", "{;<CR>", "{<CR>};<ESC>O", { desc = "Close curly brace on a new line with semicolon after it" })
+
 --------------------------------------------------------------------------------
 -- Autocommands
 --------------------------------------------------------------------------------
@@ -106,6 +140,7 @@ vim.pack.add({
   "https://github.com/neovim/nvim-lspconfig", -- only supplies server configs
   "https://github.com/mason-org/mason.nvim",  -- installs server binaries
   { src = "https://github.com/nvim-treesitter/nvim-treesitter", version = "main" },
+  "https://github.com/nvim-treesitter/nvim-treesitter-context",
 })
 
 -- Update plugins with :lua vim.pack.update()
@@ -192,9 +227,12 @@ miniclue.setup({
 --------------------------------------------------------------------------------
 local fzf = require("fzf-lua")
 fzf.setup({
+  defaults = { formatter = "path.filename_first" }, -- show "file  dir/" so truncation hits the directory
   winopts = {
+    width = 0.95,
     preview = {
-      layout = "flex"
+      layout = "flex",
+      flip_columns = 120,
     }
   }
 })
@@ -236,6 +274,18 @@ vim.api.nvim_create_autocmd("FileType", {
   group = aug,
   callback = function(ev) pcall(vim.treesitter.start, ev.buf) end,
 })
+
+-- Pins the enclosing function/class signature at the top of the window when it scrolls off screen
+local ts = require("treesitter-context")
+ts.setup({
+  trim_scope = "inner", -- when context is too long, drop the outermost scopes first
+  mode = "topline",     -- compute context from the top visible line, not the cursor line
+})
+-- Underline the last context row (text and line number) to separate it from the code below
+vim.api.nvim_set_hl(0, "TreesitterContextBottom", { underline = true, sp = "Grey" })
+vim.api.nvim_set_hl(0, "TreesitterContextLineNumberBottom", { underline = true, sp = "Grey" })
+
+map("n", "[c", function() ts.go_to_context(vim.v.count1) end, { desc = "Jump to context" })
 
 --------------------------------------------------------------------------------
 -- LSP (native). Mason only installs binaries; it configures nothing.
@@ -291,5 +341,15 @@ vim.api.nvim_create_autocmd("LspAttach", {
     end
   end,
 })
+
+-- Create an autocmd for Go files to format
+vim.api.nvim_create_autocmd("BufWritePre", {
+  group = aug,
+  pattern = "*.go",
+  callback = function()
+    vim.lsp.buf.format({ async = false })
+  end,
+})
+
 
 vim.diagnostic.config({ severity_sort = true, virtual_text = true })
