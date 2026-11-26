@@ -310,7 +310,7 @@ vim.lsp.enable({ "clangd", "basedpyright", "lua_ls", "sqruff", "gopls" })
 vim.api.nvim_create_autocmd("LspAttach", {
   group = aug,
   callback = function(ev)
-    local client = vim.lsp.get_client_by_id(ev.data.client_id)
+    local client = assert(vim.lsp.get_client_by_id(ev.data.client_id))
     local function lmap(lhs, rhs, desc)
       map("n", lhs, rhs, { buffer = ev.buf, desc = desc })
     end
@@ -319,11 +319,12 @@ vim.api.nvim_create_autocmd("LspAttach", {
     lmap("gd", vim.lsp.buf.definition, "Go to definition")
     lmap("<leader>cf", function() vim.lsp.buf.format({ async = true }) end, "Format")
 
-    -- clangd: jump between header and source
-    if client and client.name == "clangd" then
+    -- jump between header and source
+    -- clangd extension, not in Neovim's list of standard LSP methods
+    ---@diagnostic disable-next-line: param-type-mismatch
+    if client:supports_method("textDocument/switchSourceHeader") then
       lmap("<leader>gh", function()
         local params = vim.lsp.util.make_text_document_params(ev.buf)
-        -- clangd extension, not in Neovim's list of standard LSP methods
         ---@diagnostic disable-next-line: param-type-mismatch
         client:request("textDocument/switchSourceHeader", params, function(err, result)
           if err or not result then
@@ -335,21 +336,21 @@ vim.api.nvim_create_autocmd("LspAttach", {
       end, "Switch header/source")
     end
 
-    if client and client:supports_method("textDocument/completion") then
+    if client:supports_method("textDocument/completion") then
       vim.lsp.completion.enable(true, client.id, ev.buf, { autotrigger = true })
       map("i", "<C-Space>", function() vim.lsp.completion.get() end, { buffer = ev.buf })
+    end
+
+    if not client:supports_method("textDocument/willSaveWaitUntil") and client:supports_method("textDocument/formatting") then
+      vim.api.nvim_create_autocmd("BufWritePre", {
+        group = aug,
+        buffer = ev.buf,
+        callback = function()
+          vim.lsp.buf.format({ bufnr = ev.buf, id = client.id, timeout_ms = 1500 })
+        end,
+      })
     end
   end,
 })
 
--- Create an autocmd for Go files to format
-vim.api.nvim_create_autocmd("BufWritePre", {
-  group = aug,
-  pattern = "*.go",
-  callback = function()
-    vim.lsp.buf.format({ async = false })
-  end,
-})
-
-
-vim.diagnostic.config({ severity_sort = true, virtual_text = true })
+vim.diagnostic.config({ severity_sort = true, virtual_lines = { current_line = true }, virtual_text = { current_line = false } })
